@@ -2,7 +2,8 @@ defmodule NostaleCrypto.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/imnotavirus/nostale_crypto_ex"
-  @version "0.1.0"
+  # Adding a `-dev` force Rustler to build our app
+  @version "0.1.0-dev"
 
   def project do
     [
@@ -37,7 +38,8 @@ defmodule NostaleCrypto.MixProject do
         "lib",
         "native",
         "mix.exs",
-        "LICENSE"
+        "LICENSE",
+        "checksum-*.exs"
       ],
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},

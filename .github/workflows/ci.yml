@@ -7,7 +7,7 @@ on:
 
 env:
   MIX_ENV: test
-  TOKENIZERS_BUILD: "true"
+  NOSTALECRYPTO_BUILD: "true"
 
 jobs:
   test:

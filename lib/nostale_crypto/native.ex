@@ -4,13 +4,17 @@ defmodule NostaleCrypto.Native do
   mix_config = Mix.Project.config()
   version = mix_config[:version]
   github_url = mix_config[:package][:links]["GitHub"]
+  # Since Rustler 0.27.0, we need to change manually the mode for each env.
+  # We want "debug" in dev and test because it's faster to compile.
+  mode = if Mix.env() in [:dev, :test], do: :debug, else: :release
 
   use RustlerPrecompiled,
     otp_app: :nostale_crypto,
     crate: "nostale_crypto",
     version: version,
     base_url: "#{github_url}/releases/download/v#{version}",
-    force_build: System.get_env("TOKENIZERS_BUILD") in ["1", "true"]
+    mode: mode,
+    force_build: System.get_env("NOSTALECRYPTO_BUILD") in ["1", "true"]
 
   # Public API
 
