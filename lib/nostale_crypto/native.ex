@@ -1,7 +1,16 @@
 defmodule NostaleCrypto.Native do
-  use Rustler,
+  @moduledoc false
+
+  mix_config = Mix.Project.config()
+  version = mix_config[:version]
+  github_url = mix_config[:package][:links]["GitHub"]
+
+  use RustlerPrecompiled,
     otp_app: :nostale_crypto,
-    crate: :nostale_crypto
+    crate: "nostale_crypto",
+    version: version,
+    base_url: "#{github_url}/releases/download/v#{version}",
+    force_build: System.get_env("TOKENIZERS_BUILD") in ["1", "true"]
 
   # Public API
 
