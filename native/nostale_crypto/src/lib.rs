@@ -1,4 +1,4 @@
-use rustler::{Binary, Encoder, Env, NewBinary, OwnedBinary, Term};
+use rustler::{Binary, Env, NewBinary, NifTuple, OwnedBinary};
 
 const SEPARATOR: u8 = 0xd8;
 
@@ -8,25 +8,29 @@ macro_rules! str {
     };
 }
 
+#[derive(NifTuple)]
+struct LoginNextResult<'a> {
+    packet: Option<Binary<'a>>,
+    remaining: Binary<'a>,
+}
+
 #[rustler::nif]
-fn login_next<'a>(env: Env<'a>, raw: Binary<'a>) -> Term<'a> {
+fn login_next<'a>(env: Env<'a>, raw: Binary<'a>) -> LoginNextResult<'a> {
     match do_login_next(raw.as_slice()) {
         Some((packet, remaining)) => {
             let mut pb = NewBinary::new(env, packet.len());
             pb.as_mut_slice().copy_from_slice(packet);
             let mut rb = NewBinary::new(env, remaining.len());
             rb.as_mut_slice().copy_from_slice(remaining);
-            rustler::types::tuple::make_tuple(
-                env,
-                &[
-                    Some::<Binary>(pb.into()).encode(env),
-                    Binary::from(rb).encode(env),
-                ],
-            )
+            LoginNextResult {
+                packet: Some(pb.into()),
+                remaining: rb.into(),
+            }
         }
-        None => {
-            rustler::types::tuple::make_tuple(env, &[None::<Binary>.encode(env), raw.encode(env)])
-        }
+        None => LoginNextResult {
+            packet: None,
+            remaining: raw,
+        },
     }
 }
 
