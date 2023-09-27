@@ -1,7 +1,7 @@
 defmodule NostaleCrypto.Native do
   use Rustler,
-      otp_app: :nostale_crypto,
-      crate: :nostale_crypto
+    otp_app: :nostale_crypto,
+    crate: :nostale_crypto
 
   # Public API
 
