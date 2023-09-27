@@ -1,6 +1,4 @@
-use std::io::Write;
-
-use rustler::{Binary, Encoder, Env, OwnedBinary, Term};
+use rustler::{Binary, Encoder, Env, NewBinary, OwnedBinary, Term};
 
 const SEPARATOR: u8 = 0xd8;
 
@@ -14,15 +12,15 @@ macro_rules! str {
 fn login_next<'a>(env: Env<'a>, raw: Binary<'a>) -> Term<'a> {
     match do_login_next(raw.as_slice()) {
         Some((packet, remaining)) => {
-            let mut pb = OwnedBinary::new(packet.len()).unwrap();
-            pb.as_mut_slice().write_all(packet).unwrap();
-            let mut rb = OwnedBinary::new(remaining.len()).unwrap();
-            rb.as_mut_slice().write_all(remaining).unwrap();
+            let mut pb = NewBinary::new(env, packet.len());
+            pb.as_mut_slice().copy_from_slice(packet);
+            let mut rb = NewBinary::new(env, remaining.len());
+            rb.as_mut_slice().copy_from_slice(remaining);
             rustler::types::tuple::make_tuple(
                 env,
                 &[
-                    Some(Binary::from_owned(pb, env)).encode(env),
-                    Binary::from_owned(rb, env).encode(env),
+                    Some::<Binary>(pb.into()).encode(env),
+                    Binary::from(rb).encode(env),
                 ],
             )
         }
