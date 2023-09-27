@@ -4,6 +4,6 @@
     { "name": "Nostale Crypto EX (Rust)", "path": "../native/nostale_crypto" }
   ],
   "extensions": {
-    "recommendations": ["JakeBecker.elixir-ls", "rust-lang.rust-analyzer"]
+    "recommendations": ["JakeBecker.elixir-ls", "1YiB.rust-bundle", "jinxdash.prettier-rust"]
   }
 }
