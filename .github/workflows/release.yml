@@ -1,4 +1,4 @@
-name: Precomp NIFs
+name: Build precompiled NIFs
 
 on:
   push:
@@ -16,29 +16,26 @@ on:
     paths:
       # In PRs we only run if this file changes.
       - ".github/workflows/release.yml"
-  workflow_dispatch:
 
 jobs:
   build_release:
     name: NIF ${{ matrix.nif }} - ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
-        nif: ["2.15"]
+        nif: ["2.15", "2.16"]
         job:
+          - { target: aarch64-apple-darwin, os: macos-11 }
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-20.04, use-cross: true }
           - { target: aarch64-unknown-linux-musl, os: ubuntu-20.04, use-cross: true }
-          - { target: aarch64-apple-darwin, os: macos-11 }
+          - { target: arm-unknown-linux-gnueabihf, os: ubuntu-20.04, use-cross: true }
+          - { target: riscv64gc-unknown-linux-gnu, os: ubuntu-20.04, use-cross: true }
           - { target: x86_64-apple-darwin, os: macos-11 }
+          - { target: x86_64-pc-windows-gnu, os: windows-2019 }
+          - { target: x86_64-pc-windows-msvc, os: windows-2019 }
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-20.04 }
           - { target: x86_64-unknown-linux-musl, os: ubuntu-20.04, use-cross: true }
-          - { target: riscv64gc-unknown-linux-gnu, os: ubuntu-20.04, use-cross: true, cargo-args: "--no-default-features"}
-          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
-          - { target: x86_64-pc-windows-msvc, os: windows-2019 }
-          - { target: x86_64-unknown-freebsd, os: ubuntu-22.04, use-cross: true, cross-version: v0.2.5 }
 
     steps:
       - name: Checkout source code
@@ -50,30 +47,21 @@ jobs:
           # Get the project version from mix.exs
           echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
-      - name: Add target
-        shell: bash
-        run: |
-          rustup target add ${{ matrix.job.target }}
-
-      - uses: Swatinem/rust-cache@v2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          prefix-key: v0-precomp
-          shared-key: ${{ matrix.job.target }}-${{ matrix.nif }}
-          workspaces: |
-            native/nostale_crypto
+          target: ${{ matrix.job.target }}
 
       - name: Build the project
         id: build-crate
-        uses: philss/rustler-precompiled-action@52c1b8dd1ed8c7fcd90ca71b177aabbd3b29b95b
+        uses: philss/rustler-precompiled-action@v1.0.1
         with:
+          nif-version: ${{ matrix.nif }}
+          project-dir: "native/nostale_crypto"
           project-name: nostale_crypto
           project-version: ${{ env.PROJECT_VERSION }}
           target: ${{ matrix.job.target }}
-          nif-version: ${{ matrix.nif }}
           use-cross: ${{ matrix.job.use-cross }}
-          cross-version: ${{ matrix.job.cross-version || 'v0.2.4' }}
-          project-dir: "native/nostale_crypto"
-          cargo-args: ${{ matrix.job.cargo-args }}
 
       - name: Artifact upload
         uses: actions/upload-artifact@v3
