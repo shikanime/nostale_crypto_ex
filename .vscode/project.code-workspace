@@ -1,0 +1,9 @@
+{
+  "folders": [
+    { "name": "Nostale Crypto EX", "path": ".." },
+    { "name": "Nostale Crypto EX (Rust)", "path": "../native/nostale_crypto" }
+  ],
+  "extensions": {
+    "recommendations": ["JakeBecker.elixir-ls", "rust-lang.rust-analyzer"]
+  }
+}
