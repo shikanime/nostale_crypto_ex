@@ -1,4 +1,6 @@
-use rustler::{ Binary, OwnedBinary };
+use std::io::Write;
+
+use rustler::{Binary, Encoder, Env, OwnedBinary, Term};
 
 const SEPARATOR: u8 = 0xd8;
 
@@ -9,10 +11,24 @@ macro_rules! str {
 }
 
 #[rustler::nif]
-fn login_next(raw: Binary) -> (Option<Binary>, Binary) {
+fn login_next<'a>(env: Env<'a>, raw: Binary<'a>) -> Term<'a> {
     match do_login_next(raw.as_slice()) {
-        Some((packet, remaining)) => (Some(packet), remaining),
-        None => (None, raw)
+        Some((packet, remaining)) => {
+            let mut pb = OwnedBinary::new(packet.len()).unwrap();
+            pb.as_mut_slice().write_all(packet).unwrap();
+            let mut rb = OwnedBinary::new(remaining.len()).unwrap();
+            rb.as_mut_slice().write_all(remaining).unwrap();
+            rustler::types::tuple::make_tuple(
+                env,
+                &[
+                    Some(Binary::from_owned(pb, env)).encode(env),
+                    Binary::from_owned(rb, env).encode(env),
+                ],
+            )
+        }
+        None => {
+            rustler::types::tuple::make_tuple(env, &[None::<Binary>.encode(env), raw.encode(env)])
+        }
     }
 }
 
@@ -20,7 +36,7 @@ fn do_login_next(raw: &[u8]) -> Option<(&[u8], &[u8])> {
     let index = raw.iter().position(|&r| r == SEPARATOR);
 
     match index {
-        Some(i) => (&raw[0..i], &raw[i + 1..]),
+        Some(i) => Some((&raw[0..i], &raw[i + 1..])),
         _ => None,
     }
 }
@@ -35,9 +51,7 @@ fn login_encrypt(raw: String) -> OwnedBinary {
 }
 
 fn do_login_encrypt(raw: &[u8]) -> Vec<u8> {
-    raw.into_iter()
-        .map(|x| x.wrapping_add(0xf))
-        .collect()
+    raw.into_iter().map(|x| x.wrapping_add(0xf)).collect()
 }
 
 #[rustler::nif]
@@ -53,4 +67,7 @@ fn do_login_decrypt(raw: &[u8]) -> Vec<u8> {
         .collect()
 }
 
-rustler::init!("Elixir.NostaleCrypto.Native", [login_next, login_encrypt, login_decrypt]);
+rustler::init!(
+    "Elixir.NostaleCrypto.Native",
+    [login_next, login_encrypt, login_decrypt]
+);
