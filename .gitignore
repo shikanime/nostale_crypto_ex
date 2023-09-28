@@ -27,3 +27,6 @@ nostale_crypto-*.tar
 
 # Native builds
 /priv/native/
+
+# Bench
+*.benchee

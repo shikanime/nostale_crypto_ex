@@ -28,7 +28,8 @@ defmodule NostaleCrypto.MixProject do
   defp deps do
     [
       {:rustler, "~> 0.29", optional: true},
-      {:rustler_precompiled, "~> 0.7"}
+      {:rustler_precompiled, "~> 0.7"},
+      {:benchee, "~> 1.1", only: :bench, runtime: false}
     ]
   end
 

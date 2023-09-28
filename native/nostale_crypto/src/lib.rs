@@ -1,12 +1,6 @@
-use rustler::{Binary, Env, NewBinary, OwnedBinary};
+use rustler::{Binary, Env, NewBinary};
 
 const SEPARATOR: u8 = 0xd8;
-
-macro_rules! str {
-    ($value:expr) => {
-        String::from_utf8($value).expect("invalid UTF-8 string")
-    };
-}
 
 #[rustler::nif]
 fn login_next<'a>(env: Env<'a>, raw: Binary<'a>) -> (Option<Binary<'a>>, Binary<'a>) {
@@ -33,12 +27,12 @@ fn do_login_next(raw: &[u8]) -> Option<(&[u8], &[u8])> {
 }
 
 #[rustler::nif]
-fn login_encrypt(raw: String) -> OwnedBinary {
+fn login_encrypt<'a>(env: Env<'a>, raw: String) -> Binary<'a> {
     let enc: Vec<u8> = do_login_encrypt(raw.as_bytes());
-    let mut binary: OwnedBinary = OwnedBinary::new(enc.len()).unwrap();
+    let mut binary = NewBinary::new(env, enc.len());
     binary.as_mut_slice().copy_from_slice(&enc);
 
-    binary
+    binary.into()
 }
 
 fn do_login_encrypt(raw: &[u8]) -> Vec<u8> {
@@ -49,7 +43,7 @@ fn do_login_encrypt(raw: &[u8]) -> Vec<u8> {
 fn login_decrypt(raw: Binary) -> String {
     let dec: Vec<u8> = do_login_decrypt(raw.as_slice());
 
-    str!(dec)
+    String::from_utf8(dec).unwrap()
 }
 
 fn do_login_decrypt(raw: &[u8]) -> Vec<u8> {
