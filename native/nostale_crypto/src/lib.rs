@@ -57,6 +57,31 @@ fn world_next<'a>(env: Env<'a>, raw: Binary<'a>, key: u8) -> (Option<Binary<'a>>
     }
 }
 
+#[rustler::nif]
+fn world_encrypt<'a>(env: Env<'a>, raw: String) -> Binary<'a> {
+    let enc = do_world_encrypt(raw.as_bytes());
+    let mut binary = NewBinary::new(env, enc.len());
+    binary.as_mut_slice().copy_from_slice(&enc);
+    binary.into()
+}
+
+pub fn do_world_encrypt(packet: &[u8]) -> Vec<u8> {
+    let bytes = packet.iter().enumerate();
+    let len = bytes.len();
+    let mut encrypted_packet = Vec::with_capacity(len + 1);
+    for (i, c) in bytes {
+        if i % 0x7E != 0 {
+            encrypted_packet.push(!c);
+        } else {
+            let remaining = if len - i > 0x7E { 0x7E } else { len - i };
+            encrypted_packet.push(remaining.try_into().unwrap());
+            encrypted_packet.push(!c);
+        }
+    }
+    encrypted_packet.push(0xFF);
+    encrypted_packet
+}
+
 /// Decrypt the delimiter from a key.
 fn pack_delimiter(offset: u8, mode: u8) -> u8 {
     match mode {
@@ -89,5 +114,11 @@ fn next<'a>(raw: &[u8], delimiter: u8) -> Option<(&[u8], &[u8])> {
 
 rustler::init!(
     "Elixir.NostaleCrypto.Native",
-    [login_next, login_encrypt, login_decrypt, world_next]
+    [
+        login_next,
+        login_encrypt,
+        login_decrypt,
+        world_next,
+        world_encrypt
+    ]
 );
