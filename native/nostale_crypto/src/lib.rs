@@ -82,6 +82,37 @@ pub fn encrypt_world_packet(packet: &[u8]) -> Vec<u8> {
     encrypted_packet
 }
 
+#[rustler::nif]
+pub fn world_session_decrypt<'a>(env: Env<'a>, packet: Binary<'a>) -> Binary<'a> {
+    let enc = decrypt_session_packet(packet.as_slice());
+    let mut binary = NewBinary::new(env, enc.len());
+    binary.as_mut_slice().copy_from_slice(&enc);
+    binary.into()
+}
+
+fn decrypt_session_packet(packet: &[u8]) -> Vec<u8> {
+    let mut decrypted_packet = Vec::with_capacity(packet.len() * 2);
+    for b in packet {
+        let first_byte = b.wrapping_sub(0xF);
+        let second_byte = first_byte & 0xF0;
+        let first_key = first_byte - second_byte;
+        let second_key = second_byte >> 0x4;
+        decrypted_packet.push(decrypt_session_byte(second_key));
+        decrypted_packet.push(decrypt_session_byte(first_key));
+    }
+    decrypted_packet
+}
+
+fn decrypt_session_byte(key: u8) -> u8 {
+    match key {
+        0 => 0x20,
+        1 => 0x20,
+        2 => 0x2D,
+        3 => 0x2E,
+        _ => 0x2C + key,
+    }
+}
+
 /// Decrypt the delimiter from a key.
 fn pack_delimiter(offset: u8, mode: u8) -> u8 {
     match mode {
@@ -119,6 +150,7 @@ rustler::init!(
         login_encrypt,
         login_decrypt,
         world_next,
-        world_encrypt
+        world_encrypt,
+        world_session_decrypt
     ]
 );
