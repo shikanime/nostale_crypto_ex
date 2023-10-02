@@ -94,4 +94,18 @@ defmodule NostaleCrypto.NativeTest do
 
     assert NostaleCrypto.Native.world_session_decrypt(enc) == dec
   end
+
+  test "world_channel_decrypt/2 decrypt a username password channel packet" do
+    enc =
+      <<198, 228, 203, 145, 70, 205, 214, 220, 208, 217, 208, 196, 7, 212, 73, 255, 208, 203, 222,
+        209, 215, 208, 210, 218, 193, 112, 67, 220, 208, 210, 63, 199, 228, 203, 161, 16, 72, 215,
+        214, 221, 200, 214, 200, 214, 248, 193, 160, 65, 218, 193, 224, 66, 241, 205>>
+
+    dec =
+      <<198, 228, 203, 145, 70, 205, 214, 220, 208, 217, 208, 196, 7, 212, 73, 255, 208, 203, 222,
+        209, 215, 208, 210, 218, 193, 112, 67, 220, 208, 210, 63, 199, 228, 203, 161, 16, 72, 215,
+        214, 221, 200, 214, 200, 214, 248, 193, 160, 65, 218, 193, 224, 66, 241, 205>>
+
+    assert NostaleCrypto.Native.world_channel_decrypt(enc, 0) == dec
+  end
 end
