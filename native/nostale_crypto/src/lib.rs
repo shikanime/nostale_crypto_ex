@@ -125,6 +125,74 @@ fn decrypt_channel_packet(packet: &[u8], offset: u8, mode: u8) -> Vec<u8> {
     decrypted_packet
 }
 
+#[rustler::nif]
+pub fn world_channel_unpack<'a>(env: Env<'a>, packet: Binary<'a>) -> Binary<'a> {
+    let enc = unpack_channel_packet(packet.as_slice());
+    let mut binary = NewBinary::new(env, enc.len());
+    binary.as_mut_slice().copy_from_slice(&enc);
+    binary.into()
+}
+
+fn unpack_channel_packet(packet: &[u8]) -> Vec<u8> {
+    let mut decrypted_packet = Vec::with_capacity(packet.len());
+    let mut index = 0;
+    while index < packet.len() {
+        let flag = packet[index];
+        let payload = &packet[index + 1..];
+
+        if flag <= 0x7A {
+            let mut first = vec![0; payload.len()];
+            let n = decode_packed_linear_packet(&mut first, payload, flag);
+            decrypted_packet.extend_from_slice(&first[0..n]);
+            index += n + 1;
+        } else {
+            let mut first = vec![0; payload.len() * 2];
+            let (ndst, nsrc) = decode_packed_compact_packet(&mut first, payload, flag & 0x7F);
+            decrypted_packet.extend_from_slice(&first[0..ndst]);
+            index += nsrc + 1;
+        }
+    }
+    decrypted_packet
+}
+
+fn decode_packed_linear_packet(dst: &mut [u8], src: &[u8], flag: u8) -> usize {
+    let mut l = flag as usize;
+    if l > src.len() {
+        l = src.len();
+    }
+    for n in 0..l {
+        dst[n] = src[n] ^ 0xFF;
+    }
+    l
+}
+
+const PERMUTATIONS: [u8; 14] = [
+    b' ', b'-', b'.', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'n',
+];
+
+fn decode_packed_compact_packet(dst: &mut [u8], src: &[u8], flag: u8) -> (usize, usize) {
+    let mut buff = src;
+    let mut ndst = 0;
+    let mut nsrc = 0;
+    while ndst < flag as usize && buff.len() > 0 {
+        let h = (buff[0] >> 4) as usize;
+        let l = (buff[0] & 0x0F) as usize;
+        buff = &buff[1..];
+        if h != 0 && h != 0xF && (l == 0 || l == 0xF) {
+            dst[ndst] = PERMUTATIONS[h - 1];
+        } else if l != 0 && l != 0xF && (h == 0 || h == 0xF) {
+            dst[ndst] = PERMUTATIONS[l - 1];
+        } else if h != 0 && h != 0xF && l != 0 && l != 0xF {
+            dst[ndst] = PERMUTATIONS[h - 1];
+            ndst += 1;
+            dst[ndst] = PERMUTATIONS[l - 1];
+        }
+        ndst += 1;
+        nsrc += 1;
+    }
+    (ndst, nsrc)
+}
+
 fn decrypt_session_byte(key: u8) -> u8 {
     match key {
         0 => 0x20,
@@ -174,6 +242,7 @@ rustler::init!(
         world_next,
         world_encrypt,
         world_session_decrypt,
-        world_channel_decrypt
+        world_channel_decrypt,
+        world_channel_unpack
     ]
 );
