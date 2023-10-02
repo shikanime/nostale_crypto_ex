@@ -27,6 +27,9 @@ defmodule NostaleCrypto.Native do
   @spec login_decrypt(binary()) :: String.t()
   def login_decrypt(_raw), do: err()
 
+  @spec world_next(binary(), 0..65535) :: {binary() | nil, binary()}
+  def world_next(_raw, _key), do: err()
+
   # Helpers
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
