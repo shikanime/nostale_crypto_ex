@@ -68,4 +68,11 @@ defmodule NostaleCrypto.NativeTest do
                 224, 66, 241, 205, 199, 228, 203, 161, 16, 72, 215, 214, 221, 200, 214, 200, 214,
                 248, 193, 160, 65, 218, 193, 224, 66, 241, 205>>}
   end
+
+  test "world_encrypt/1 encrypt ad packet" do
+    dec = "foo"
+    enc = <<3, 153, 144, 144, 255>>
+
+    assert NostaleCrypto.Native.world_encrypt(dec) == enc
+  end
 end
