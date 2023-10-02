@@ -103,6 +103,28 @@ fn decrypt_session_packet(packet: &[u8]) -> Vec<u8> {
     decrypted_packet
 }
 
+#[rustler::nif]
+pub fn world_channel_decrypt<'a>(env: Env<'a>, packet: Binary<'a>, key: u16) -> Binary<'a> {
+    let enc = decrypt_channel_packet(packet.as_slice(), cipher_offset(key), cipher_mode(key));
+    let mut binary = NewBinary::new(env, enc.len());
+    binary.as_mut_slice().copy_from_slice(&enc);
+    binary.into()
+}
+
+fn decrypt_channel_packet(packet: &[u8], offset: u8, mode: u8) -> Vec<u8> {
+    let mut decrypted_packet = Vec::with_capacity(packet.len());
+    for b in packet {
+        decrypted_packet.push(match mode {
+            0 => b.wrapping_sub(offset),
+            1 => b.wrapping_add(offset),
+            2 => b.wrapping_sub(offset) ^ 0xC3,
+            3 => b.wrapping_add(offset) ^ 0xC3,
+            _ => unreachable!(),
+        })
+    }
+    decrypted_packet
+}
+
 fn decrypt_session_byte(key: u8) -> u8 {
     match key {
         0 => 0x20,
@@ -151,6 +173,7 @@ rustler::init!(
         login_decrypt,
         world_next,
         world_encrypt,
-        world_session_decrypt
+        world_session_decrypt,
+        world_channel_decrypt
     ]
 );
