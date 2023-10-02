@@ -108,4 +108,11 @@ defmodule NostaleCrypto.NativeTest do
 
     assert NostaleCrypto.Native.world_channel_decrypt(enc, 0) == dec
   end
+
+  test "world_channel_unpack/2 unpack a pulse channel packet" do
+    packed = <<135, 141, 107, 177, 64>>
+    unpacked = "49277 0"
+
+    assert NostaleCrypto.Native.world_channel_unpack(packed) == unpacked
+  end
 end
